@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* @theme {
+  --color-vscode-actionBar-toggledBackground: var(--vscode-actionBar-toggledBackground);
+} */
+
+body {
+  background-color: var(--vscode-panel-background);
+  color: var(--vscode-foreground);
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
