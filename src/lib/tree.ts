@@ -91,7 +91,7 @@ function attachParent(
   ret.subItems = tree.subItems
     ? tree.subItems.map((item) => attachParent(item, ret))
     : undefined
-  return ret as TreeItem
+  return ret
 }
 
 /**
