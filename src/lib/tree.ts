@@ -56,6 +56,10 @@ export function useTree(
   const [tree, setTreeInternal] = useState(() => {
     const init =
       typeof initialState === 'function' ? initialState() : initialState
+    sortItems(init)
+    for (const item of init) {
+      sortRecursive(item)
+    }
     return init.map((item) => attachParent(item))
   })
 
