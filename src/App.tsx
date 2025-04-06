@@ -14,7 +14,7 @@ function App() {
   const [tree, setTree] = useTree(() => treeDataUnsorted)
 
   const onSelect = useCallback((item: TreeItem) => {
-    console.log('Select', item)
+    // console.log('Select', item)
   }, [])
 
   const onCreate = useCallback(
@@ -91,7 +91,7 @@ function App() {
       </style>
       <main className="h-screen">
         <Tree
-          tree={tree[0]}
+          tree={tree}
           onSelect={onSelect}
           onCreate={onCreate}
           onRename={onRename}

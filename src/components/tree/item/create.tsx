@@ -6,7 +6,7 @@ type CreateItemProps = {
   itemType: 'file' | 'directory'
   prefix: string
   onClose: () => void
-  onCreate?: (label: string, parent: string, type: 'file' | 'directory') => void
+  onCreate: (label: string, parent: string, type: 'file' | 'directory') => void
 }
 
 export function CreateItem({
@@ -19,7 +19,7 @@ export function CreateItem({
   const icon = itemType === 'file' ? icons.leaf : icons.branch
   const onComplete = (label: string) => {
     if (label) {
-      onCreate?.(label, prefix, itemType)
+      onCreate(label, prefix, itemType)
     }
     onClose()
   }

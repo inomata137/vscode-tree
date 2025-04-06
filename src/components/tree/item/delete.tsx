@@ -5,7 +5,7 @@ type DeleteDialogProps = {
   item: TreeItem
   open: boolean
   onOpenChange: (open: boolean) => void
-  onDelete?: (item: TreeItem) => void
+  onDelete: (item: TreeItem) => void
 }
 
 export function DeleteDialog({
@@ -36,7 +36,7 @@ export function DeleteDialog({
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
               <vscode-button
-                onClick={() => onDelete?.(item)}
+                onClick={() => onDelete(item)}
                 autoFocus
                 className="px-2.5 py-1 border border-[var(--vscode-button-border)]"
               >

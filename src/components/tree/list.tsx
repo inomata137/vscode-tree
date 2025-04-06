@@ -5,28 +5,20 @@ import { Item } from './item'
 type TreeItemsListProps = {
   items: TreeItem[]
   indentLevel: number
-  selectionPath: string | null
-  focusPath: string | null
-  isActive: boolean
   className?: string
+  rootRef: React.RefObject<HTMLElement | null>
   onSelect: (item: TreeItem) => void
-  onFocus: (item: TreeItem) => void
-  onActiveChange: (isActive: boolean) => void
-  onCreate?: (label: string, parent: string, type: 'file' | 'directory') => void
-  onRename?: (item: TreeItem, newLabel: string) => void
-  onDelete?: (item: TreeItem) => void
+  onCreate: (label: string, parent: string, type: 'file' | 'directory') => void
+  onRename: (item: TreeItem, newLabel: string) => void
+  onDelete: (item: TreeItem) => void
 }
 
 export const ItemsList = ({
   items,
   indentLevel,
-  selectionPath,
-  focusPath,
-  isActive,
   className,
+  rootRef,
   onSelect,
-  onFocus,
-  onActiveChange,
   onCreate,
   onRename,
   onDelete
@@ -38,12 +30,8 @@ export const ItemsList = ({
           key={itemIdentifier(item)}
           item={item}
           indentLevel={indentLevel}
-          selectionPath={selectionPath}
-          focusPath={focusPath}
-          isActive={isActive}
+          rootRef={rootRef}
           onSelect={onSelect}
-          onFocus={onFocus}
-          onActiveChange={onActiveChange}
           onCreate={onCreate}
           onRename={onRename}
           onDelete={onDelete}

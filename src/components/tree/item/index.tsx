@@ -1,7 +1,7 @@
 import { hasCmdKey } from '@/lib/os'
 import { type TreeItem, getFullpath, icons } from '@/lib/tree'
 import clsx from 'clsx'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { ItemsList } from '../list'
 import { ItemWithContextMenu } from './contextmenu'
 import { CreateItem } from './create'
@@ -13,30 +13,25 @@ import '@vscode-elements/elements/dist/vscode-button'
 type TreeItemProps = {
   item: TreeItem
   indentLevel: number
-  selectionPath: string | null
-  focusPath: string | null
-  isActive: boolean
+  rootRef: React.RefObject<HTMLElement | null>
   onSelect: (item: TreeItem) => void
-  onFocus: (item: TreeItem) => void
-  onActiveChange: (isActive: boolean) => void
-  onCreate?: (label: string, parent: string, type: 'file' | 'directory') => void
-  onRename?: (item: TreeItem, newLabel: string) => void
-  onDelete?: (item: TreeItem) => void
+  onCreate: (label: string, parent: string, type: 'file' | 'directory') => void
+  onRename: (item: TreeItem, newLabel: string) => void
+  onDelete: (item: TreeItem) => void
 }
 
 export const Item = memo(function Item({
   item,
   indentLevel,
-  selectionPath,
-  focusPath,
-  isActive,
+  rootRef,
   onSelect,
-  onFocus,
-  onActiveChange,
   onCreate,
   onRename,
   onDelete
 }: TreeItemProps) {
+  const [isSelected, setIsSelected] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+  const [isActive, setIsActive] = useState(true)
   const [editable, setEditable] = useState(false)
   const [isChildrenOpen, setIsChildrenOpen] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -44,6 +39,7 @@ export const Item = memo(function Item({
   const [newChildItem, setNewChildItem] = useState<'file' | 'directory' | null>(
     null
   )
+  const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const cmdKeyAvailable = useMemo(() => hasCmdKey(), [])
   const fullPath = useMemo(() => getFullpath(item), [item])
   const { childDirectories, childFiles } = useMemo(() => {
@@ -67,11 +63,8 @@ export const Item = memo(function Item({
       childDirectories
     }
   }, [item.subItems])
-  const isContextMenuOpen = useRef(false)
   const itemRef = useRef<HTMLDivElement>(null)
 
-  const isSelected = selectionPath === fullPath
-  const isFocused = focusPath === fullPath
   const icon = item.subItems
     ? isChildrenOpen
       ? icons.open
@@ -82,7 +75,7 @@ export const Item = memo(function Item({
     ? ''
     : clsx(
         isFocused &&
-          (isActive || isContextMenuOpen.current) &&
+          (contextMenuOpen || isActive) &&
           'outline outline-[var(--vscode-list-focusOutline)]',
         isSelected &&
           (isActive
@@ -91,13 +84,14 @@ export const Item = memo(function Item({
         !isSelected && 'hover:bg-[var(--vscode-list-hoverBackground)]'
       )
 
+  // キーボードからのRename開始
   useEffect(() => {
     if (isFocused) {
-      if (isContextMenuOpen.current) {
+      if (contextMenuOpen) {
         return
       }
       const startRename = (e: KeyboardEvent) => {
-        if (isContextMenuOpen.current) {
+        if (contextMenuOpen) {
           return
         }
         if (cmdKeyAvailable ? e.key === 'Enter' : e.key === 'F2') {
@@ -110,10 +104,11 @@ export const Item = memo(function Item({
       }
     }
     setEditable(false)
-  }, [isFocused, cmdKeyAvailable])
+  }, [isFocused, cmdKeyAvailable, contextMenuOpen])
 
+  // キーボードからのDelete開始
   useEffect(() => {
-    if (!isSelected || editable || isContextMenuOpen.current) {
+    if (!isSelected || editable || contextMenuOpen) {
       return
     }
     const openDeleteDialog = (e: KeyboardEvent) => {
@@ -131,19 +126,82 @@ export const Item = memo(function Item({
     return () => {
       window.removeEventListener('keydown', openDeleteDialog)
     }
-  }, [isSelected, editable, cmdKeyAvailable])
+  }, [isSelected, editable, cmdKeyAvailable, contextMenuOpen])
+
+  // 外側をクリックしたときの処理
+  useEffect(() => {
+    const currentRoot = rootRef.current
+    const currentItem = itemRef.current
+    if (!currentRoot || !currentItem) {
+      return
+    }
+    if (!isSelected && !isFocused) {
+      return
+    }
+    const onClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (currentItem.contains(target)) {
+        return
+      }
+      setIsFocused(false)
+      if (currentRoot.contains(target)) {
+        setIsSelected(false)
+      } else {
+        setIsActive(false)
+      }
+    }
+    window.addEventListener('click', onClickOutside)
+    return () => {
+      window.removeEventListener('click', onClickOutside)
+    }
+  }, [rootRef, isSelected, isFocused])
+
+  // 外側で右クリックしたときの処理
+  useEffect(() => {
+    const currentRoot = rootRef.current
+    const currentItem = itemRef.current
+    if (!currentRoot || !currentItem) {
+      return
+    }
+    if (!isSelected && !isFocused) {
+      return
+    }
+    if (contextMenuOpen || runDialogOpen || deleteDialogOpen) {
+      return
+    }
+    const onContextMenuOutside = (e: MouseEvent) => {
+      if (currentItem.contains(e.target as Node)) {
+        return
+      }
+      setIsFocused(false)
+    }
+    window.addEventListener('contextmenu', onContextMenuOutside)
+    return () => {
+      window.removeEventListener('contextmenu', onContextMenuOutside)
+    }
+  }, [
+    rootRef,
+    isSelected,
+    isFocused,
+    contextMenuOpen,
+    runDialogOpen,
+    deleteDialogOpen
+  ])
 
   const selectItem = () => {
     if (item.subItems) {
       setIsChildrenOpen((v) => !v)
     }
+    setIsSelected(true)
+    setIsFocused(true)
+    setIsActive(true)
     onSelect(item)
   }
 
   const completeRename = (newLabel: string) => {
     setEditable(false)
     if (newLabel !== item.label) {
-      onRename?.(item, newLabel)
+      onRename(item, newLabel)
     }
   }
 
@@ -168,7 +226,7 @@ export const Item = memo(function Item({
   }
 
   const onSelectRename = () => {
-    onFocus(item)
+    setIsFocused(true)
     // context menuが閉じるのを待ってから開かないとfocusが移らない
     window.setTimeout(() => setEditable(true))
   }
@@ -177,14 +235,15 @@ export const Item = memo(function Item({
     setDeleteDialogOpen(true)
   }
 
-  const onContextMenuOpenChange = useCallback(
-    (open: boolean) => {
-      isContextMenuOpen.current = open
-      onFocus(item)
-      onActiveChange(!open)
-    },
-    [item, onFocus, onActiveChange]
-  )
+  const onContextMenuOpenChange = (open: boolean) => {
+    if (open) {
+      setIsFocused(true)
+      setIsActive(true)
+    }
+    setContextMenuOpen(open)
+  }
+
+  console.log(fullPath, 'Item render')
 
   return (
     <li>
@@ -234,13 +293,9 @@ export const Item = memo(function Item({
         <ItemsList
           items={childDirectories}
           indentLevel={indentLevel + 1}
-          selectionPath={selectionPath}
-          focusPath={focusPath}
-          isActive={isActive}
           className={isChildrenOpen ? '' : 'hidden'}
+          rootRef={rootRef}
           onSelect={onSelect}
-          onFocus={onFocus}
-          onActiveChange={onActiveChange}
           onCreate={onCreate}
           onRename={onRename}
           onDelete={onDelete}
@@ -259,13 +314,9 @@ export const Item = memo(function Item({
         <ItemsList
           items={childFiles}
           indentLevel={indentLevel + 1}
-          selectionPath={selectionPath}
-          focusPath={focusPath}
-          isActive={isActive}
           className={isChildrenOpen ? '' : 'hidden'}
+          rootRef={rootRef}
           onSelect={onSelect}
-          onFocus={onFocus}
-          onActiveChange={onActiveChange}
           onCreate={onCreate}
           onRename={onRename}
           onDelete={onDelete}
