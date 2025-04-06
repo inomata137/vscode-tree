@@ -2,33 +2,23 @@ import { hasCmdKey } from '@/lib/os'
 import { type TreeItem, getFullpath, icons } from '@/lib/tree'
 import clsx from 'clsx'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { useTreeContext } from '../context'
 import { ItemsList } from '../list'
 import { ItemWithContextMenu } from './contextmenu'
 import { CreateItem } from './create'
 import { DeleteDialog } from './delete'
 import { RenameInput } from './rename'
 import { RunDialog } from './run'
+
 import '@vscode-elements/elements/dist/vscode-button'
 
 type TreeItemProps = {
   item: TreeItem
   indentLevel: number
-  rootRef: React.RefObject<HTMLElement | null>
-  onSelect: (item: TreeItem) => void
-  onCreate: (label: string, parent: string, type: 'file' | 'directory') => void
-  onRename: (item: TreeItem, newLabel: string) => void
-  onDelete: (item: TreeItem) => void
 }
 
-export const Item = memo(function Item({
-  item,
-  indentLevel,
-  rootRef,
-  onSelect,
-  onCreate,
-  onRename,
-  onDelete
-}: TreeItemProps) {
+export const Item = memo(function Item({ item, indentLevel }: TreeItemProps) {
+  const { rootRef, onSelect, onCreate, onRename, onDelete } = useTreeContext()
   const [isSelected, setIsSelected] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const [isActive, setIsActive] = useState(true)
@@ -160,13 +150,16 @@ export const Item = memo(function Item({
   useEffect(() => {
     const currentRoot = rootRef.current
     const currentItem = itemRef.current
-    if (!currentRoot || !currentItem) {
+    if (
+      !currentRoot ||
+      !currentItem ||
+      contextMenuOpen ||
+      runDialogOpen ||
+      deleteDialogOpen
+    ) {
       return
     }
     if (!isSelected && !isFocused) {
-      return
-    }
-    if (contextMenuOpen || runDialogOpen || deleteDialogOpen) {
       return
     }
     const onContextMenuOutside = (e: MouseEvent) => {
@@ -181,11 +174,11 @@ export const Item = memo(function Item({
     }
   }, [
     rootRef,
-    isSelected,
-    isFocused,
     contextMenuOpen,
     runDialogOpen,
-    deleteDialogOpen
+    deleteDialogOpen,
+    isSelected,
+    isFocused
   ])
 
   const selectItem = () => {
@@ -294,11 +287,6 @@ export const Item = memo(function Item({
           items={childDirectories}
           indentLevel={indentLevel + 1}
           className={isChildrenOpen ? '' : 'hidden'}
-          rootRef={rootRef}
-          onSelect={onSelect}
-          onCreate={onCreate}
-          onRename={onRename}
-          onDelete={onDelete}
         />
       )}
       {newChildItem === 'file' && (
@@ -315,11 +303,6 @@ export const Item = memo(function Item({
           items={childFiles}
           indentLevel={indentLevel + 1}
           className={isChildrenOpen ? '' : 'hidden'}
-          rootRef={rootRef}
-          onSelect={onSelect}
-          onCreate={onCreate}
-          onRename={onRename}
-          onDelete={onDelete}
         />
       )}
       <DeleteDialog

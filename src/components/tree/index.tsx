@@ -1,6 +1,8 @@
 import type { TreeItem } from '@/lib/tree'
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
+import { TreeContextProvider } from './context'
 import { ItemsList } from './list'
+
 import '@vscode-elements/elements/dist/vscode-icon'
 
 type TreeProps = {
@@ -19,18 +21,23 @@ export function Tree({
   onDelete = () => {}
 }: TreeProps) {
   const rootRef = useRef<HTMLDivElement>(null)
+  const context = useMemo(
+    () => ({
+      tree,
+      rootRef,
+      onSelect,
+      onCreate,
+      onRename,
+      onDelete
+    }),
+    [tree, onSelect, onCreate, onRename, onDelete]
+  )
 
   return (
     <div ref={rootRef} className="h-full w-1/2">
-      <ItemsList
-        items={tree}
-        indentLevel={0}
-        rootRef={rootRef}
-        onSelect={onSelect}
-        onCreate={onCreate}
-        onRename={onRename}
-        onDelete={onDelete}
-      />
+      <TreeContextProvider value={context}>
+        <ItemsList items={tree} indentLevel={0} />
+      </TreeContextProvider>
     </div>
   )
 }

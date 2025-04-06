@@ -1,5 +1,6 @@
 import type { TreeItem } from '@/lib/tree'
 import { ContextMenu } from 'radix-ui'
+import type { ReactNode } from 'react'
 
 type ItemWithContextMenuProps = {
   item: TreeItem
@@ -10,7 +11,7 @@ type ItemWithContextMenuProps = {
   onSelectRun: () => void
   onSelectRename: () => void
   onSelectDelete: () => void
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export function ItemWithContextMenu({

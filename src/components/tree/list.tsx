@@ -6,22 +6,12 @@ type TreeItemsListProps = {
   items: TreeItem[]
   indentLevel: number
   className?: string
-  rootRef: React.RefObject<HTMLElement | null>
-  onSelect: (item: TreeItem) => void
-  onCreate: (label: string, parent: string, type: 'file' | 'directory') => void
-  onRename: (item: TreeItem, newLabel: string) => void
-  onDelete: (item: TreeItem) => void
 }
 
 export const ItemsList = ({
   items,
   indentLevel,
-  className,
-  rootRef,
-  onSelect,
-  onCreate,
-  onRename,
-  onDelete
+  className
 }: TreeItemsListProps) => {
   return (
     <ul className={clsx('list-none', className)}>
@@ -30,11 +20,6 @@ export const ItemsList = ({
           key={itemIdentifier(item)}
           item={item}
           indentLevel={indentLevel}
-          rootRef={rootRef}
-          onSelect={onSelect}
-          onCreate={onCreate}
-          onRename={onRename}
-          onDelete={onDelete}
         />
       ))}
     </ul>
